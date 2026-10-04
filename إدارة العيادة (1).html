@@ -1,0 +1,108 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1a6fd4"><title>إدارة العيادة</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#eef4fb;--cd:#fff;--tx:#12263f;--mu:#5b6f88;--pr:#1a6fd4;--bd:#d6e2f1;--ok:#16824a;--bad:#c93a3a}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1623;--cd:#16233a;--tx:#e6eef9;--mu:#93a8c4;--pr:#4b95f0;--bd:#26384f;--ok:#43c283;--bad:#f06a6a}}
+:root[data-theme=dark]{--bg:#0d1623;--cd:#16233a;--tx:#e6eef9;--mu:#93a8c4;--pr:#4b95f0;--bd:#26384f;--ok:#43c283;--bad:#f06a6a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:Tahoma,"Segoe UI",Arial,sans-serif;line-height:1.5}
+.w{max-width:900px;margin:auto;padding:14px}
+h1{font-size:20px;margin:6px 0 12px}h2{font-size:16px;margin:0 0 10px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.c{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px}
+.s b{display:block;font-size:19px;margin-top:2px}.s span{color:var(--mu);font-size:13px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.mu{color:var(--mu);font-size:13px}
+input,textarea,select{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;margin-bottom:8px}
+button{background:var(--pr);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;cursor:pointer}
+button.l{background:transparent;color:var(--pr);border:1px solid var(--bd)}button.d{background:transparent;color:var(--bad);padding:2px 8px}
+.r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.r>*{flex:1;min-width:110px}
+.p{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--bd);cursor:pointer}
+.p:first-of-type{border-top:0}
+.x{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+</style></head><body><div class="w" id="app"></div>
+<script>
+var K='clinic_v1',db={p:[],lab:[],ap:[],cur:'$',sync:0,ts:0},view=null,q='',RA=today().slice(0,8)+'01',RB=today(),cdoc=null;
+try{var s=localStorage.getItem(K);if(s)db=JSON.parse(s)}catch(e){}
+if(!db.ap)db.ap=[];
+function save(){db.ts=Date.now();try{localStorage.setItem(K,JSON.stringify(db))}catch(e){}push()}
+function push(){if(cdoc&&db.sync)cdoc.set({j:JSON.stringify(db),ts:db.ts}).catch(function(){})}
+async function initSync(){try{var u=await claude.use('user'),d=await claude.use('db');if(!u||!d)return;var id=await u.id();if(!id)return;cdoc=d.collection('data/users/'+id).doc('clinic');window.canSync=1;if(db.sync){var sn=await cdoc.get();if(sn.exists&&sn.data().ts>db.ts){db=JSON.parse(sn.data().j);db.sync=1;if(!db.ap)db.ap=[];try{localStorage.setItem(K,JSON.stringify(db))}catch(e){}}else push()}draw()}catch(e){}}
+function tg(){if(!db.sync&&!confirm('ستُخزَّن نسخة من بيانات المرضى في حسابك على claude.ai (خاصة بك). متابعة؟'))return;db.sync=db.sync?0:1;save();draw()}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function E(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function F(n){return (Number(n)||0).toLocaleString('en-US')+' '+E(db.cur)}
+function sum(a,k){return a.reduce(function(s,x){return s+(+x[k]||0)},0)}
+function cost(p){return sum(p.t,'cost')}function paid(p){return sum(p.pay,'amt')}function rem(p){return cost(p)-paid(p)}
+function last(p){return p.t.map(function(x){return x.d}).sort().pop()||''}
+function today(){return new Date().toISOString().slice(0,10)}
+function v(id){return document.getElementById(id).value}
+function home(){
+var rev=0,bil=0,rm=0;db.p.forEach(function(p){rev+=paid(p);bil+=cost(p);rm+=rem(p)});
+var lab=sum(db.lab,'amt'),net=rev-lab,ld=0;db.p.forEach(function(p){ld+=sum(p.t,'lab')});var td=today(),ups=db.ap.filter(function(a){return a.d>=td}).sort(ak),od=db.ap.filter(function(a){return a.d<td}).sort(ak),nt=db.ap.filter(function(a){return a.d==td}).length;
+var l=db.p.filter(function(p){return p.name.toLowerCase().indexOf(q.toLowerCase())>-1}).sort(function(a,b){return last(b).localeCompare(last(a))});
+var m={};db.p.forEach(function(p){p.pay.forEach(function(x){var k=x.d.slice(0,7);m[k]=m[k]||{r:0,l:0};m[k].r+=+x.amt})});
+db.lab.forEach(function(x){var k=x.d.slice(0,7);m[k]=m[k]||{r:0,l:0};m[k].l+=+x.amt});
+var ks=Object.keys(m).sort().reverse();
+return '<div class="r"><h1 style="flex:3">🦷 إدارة العيادة</h1><button class="l" onclick="lock()">🔒 قفل</button></div>'+(nt?'<div class="c" style="border-color:var(--pr)">🔔 عندك '+nt+' موعد اليوم</div>':'')+'<div class="g">'
++'<div class="c s"><span>إيرادات العيادة (المقبوض)</span><b class="ok">'+F(rev)+'</b></div>'
++'<div class="c s"><span>مدفوعات المخبر</span><b class="bad">'+F(lab)+'</b></div>'
++'<div class="c s"><span>الصافي بعد المخبر</span><b>'+F(net)+'</b></div>'
++'<div class="c s"><span>إجمالي التكاليف</span><b>'+F(bil)+'</b></div>'
++'<div class="c s"><span>المتبقي على المرضى</span><b class="bad">'+F(rm)+'</b></div>'
++'<div class="c s"><span>مستحقات المخبر المتبقية</span><b class="bad">'+F(ld-lab)+'</b></div>'
++'<div class="c s"><span>عدد المرضى</span><b>'+db.p.length+'</b></div></div>'
++'<div class="c"><h2>المرضى</h2><div class="r"><input id="q" placeholder="ابحث باسم المريض..." value="'+E(q)+'" oninput="q=this.value;list()"><button onclick="view=\'new\';draw()">+ مريض جديد</button></div><div id="ls">'+rows(l)+'</div></div>'
++apSec(ups,od)
++'<div class="c"><h2>📊 تقرير حسب الفترة</h2><div class="r"><input id="ra" type="date" value="'+RA+'" oninput="rep()"><input id="rb" type="date" value="'+RB+'" oninput="rep()"></div><div id="rp"></div></div>'
++'<div class="c"><h2>مدفوعات المخبر</h2><div class="r"><input id="ld" type="date" value="'+today()+'"><input id="la" type="number" placeholder="المبلغ"><input id="ln" placeholder="ملاحظة / اسم المخبر"><button onclick="addLab()">إضافة</button></div>'
++db.lab.slice().sort(function(a,b){return b.d.localeCompare(a.d)}).map(function(x){return '<div class="p" style="cursor:default"><span>'+E(x.d)+' — '+E(x.n)+'</span><span><b class="bad">'+F(x.amt)+'</b><button class="d" onclick="del(\'lab\',\''+x.id+'\')">✕</button></span></div>'}).join('')+'</div>'
++'<div class="c"><h2>التفاصيل المالية الشهرية</h2><div class="x"><table><tr><th>الشهر</th><th>الإيرادات</th><th>المخبر</th><th>الصافي</th></tr>'
++ks.map(function(k){return '<tr><td>'+k+'</td><td class="ok">'+F(m[k].r)+'</td><td class="bad">'+F(m[k].l)+'</td><td>'+F(m[k].r-m[k].l)+'</td></tr>'}).join('')+'</table></div></div>'
++'<div class="c"><h2>إعدادات ونسخ احتياطي</h2><div class="r"><input value="'+E(db.cur)+'" onchange="db.cur=this.value||\'$\';save();draw()" placeholder="العملة"><button class="l" onclick="chg()">🔑 تغيير الرمز</button><button class="l" onclick="dl()">⬇ تنزيل نسخة احتياطية</button><button class="l" onclick="bk()">نص النسخة</button><button class="l" onclick="rs()">استرجاع من نص</button></div><div class="r"><label class="mu">استرجاع من ملف: <input type="file" accept=".json" onchange="rf2(this)"></label>'+(window.canSync?'<button class="l" onclick="tg()">'+(db.sync?'☁ المزامنة مفعّلة (إيقاف)':'☁ تفعيل المزامنة بين الأجهزة')+'</button>':'')+'</div><textarea id="bx" rows="3" style="display:none" placeholder="الصق النسخة هنا للاسترجاع"></textarea><p class="mu">البيانات محفوظة على هذا الجهاز. عند تفعيل المزامنة تُحفظ نسخة خاصة بحسابك. نزّل نسخة احتياطية بشكل دوري.</p></div>';}
+function rows(l){return l.length?l.map(function(p){var r=rem(p);return '<div class="p" onclick="view=\''+p.id+'\';draw()"><div><b>'+E(p.name)+'</b><div class="mu">آخر علاج: '+(last(p)||'—')+'</div></div><b class="'+(r>0?'bad':'ok')+'">'+(r>0?'متبقي '+F(r):'مسدّد')+'</b></div>'}).join(''):'<p class="mu">لا يوجد مرضى.</p>'}
+function list(){document.getElementById('ls').innerHTML=rows(db.p.filter(function(p){return p.name.toLowerCase().indexOf(q.toLowerCase())>-1}).sort(function(a,b){return last(b).localeCompare(last(a))}))}
+function form(p){p=p||{};return '<div class="c"><h2>'+(p.id?'تعديل بيانات المريض':'مريض جديد')+'</h2><input id="n" placeholder="الاسم" value="'+E(p.name)+'"><div class="r"><input id="a" type="number" placeholder="العمر" value="'+E(p.age)+'"><input id="s" placeholder="السكن" value="'+E(p.addr)+'"></div><input id="ph" placeholder="رقم الهاتف" value="'+E(p.ph)+'"><textarea id="h" rows="3" placeholder="التاريخ الطبي (أمراض، حساسية، أدوية...)">'+E(p.hist)+'</textarea><div class="r"><button onclick="sp(\''+(p.id||'')+'\')">حفظ</button><button class="l" onclick="view='+(p.id?'\''+p.id+'\'':'null')+';draw()">إلغاء</button></div></div>'}
+function sp(id){var n=v('n').trim();if(!n)return alert('اكتب اسم المريض');var p=db.p.filter(function(x){return x.id==id})[0];
+if(!p){p={id:uid(),t:[],pay:[]};db.p.push(p)}p.name=n;p.age=v('a');p.addr=v('s');p.hist=v('h');p.ph=v('ph');save();view=p.id;draw()}
+function pat(p){var r=rem(p);
+return '<div class="r"><button class="l" onclick="view=null;draw()">→ رجوع</button></div><h1>'+E(p.name)+'</h1>'
++'<div class="c"><div class="mu">العمر: '+E(p.age||'—')+' | السكن: '+E(p.addr||'—')+' | الهاتف: '+E(p.ph||'—')+'</div><p><b>التاريخ الطبي:</b> '+E(p.hist||'—')+'</p><div class="r"><button class="l" onclick="view=\'e'+p.id+'\';draw()">تعديل</button><button class="l bad" onclick="delP(\''+p.id+'\')">حذف المريض</button></div></div>'
++'<div class="g"><div class="c s"><span>الحساب الكلي</span><b>'+F(cost(p))+'</b></div><div class="c s"><span>المسدّد</span><b class="ok">'+F(paid(p))+'</b></div><div class="c s"><span>المتبقي</span><b class="'+(r>0?'bad':'ok')+'">'+F(r)+'</b></div><div class="c s"><span>تكلفة المخبر لحالته</span><b>'+F(sum(p.t,'lab'))+'</b></div></div>'
++'<div class="c"><h2>العلاجات</h2><div class="r"><input id="td" type="date" value="'+today()+'"><input id="tt" placeholder="نوع العلاج (حشوة، قلع، تنظيف...)"><input id="tc" type="number" placeholder="التكلفة"><input id="tl" type="number" placeholder="تكلفة المخبر (اختياري)"><button onclick="addT(\''+p.id+'\')">إضافة</button></div>'
++p.t.slice().sort(function(a,b){return b.d.localeCompare(a.d)}).map(function(x){return '<div class="p" style="cursor:default"><span>'+E(x.d)+' — '+E(x.type)+(x.lab?' <span class="mu">(مخبر '+F(x.lab)+')</span>':'')+'</span><span><b>'+F(x.cost)+'</b><button class="d" onclick="delX(\''+p.id+'\',\'t\',\''+x.id+'\')">✕</button></span></div>'}).join('')+'</div>'
++'<div class="c"><h2>الدفعات</h2><div class="r"><input id="pd" type="date" value="'+today()+'"><input id="pa" type="number" placeholder="المبلغ المدفوع"><button onclick="addP(\''+p.id+'\')">تسجيل دفعة</button></div>'
++p.pay.slice().sort(function(a,b){return b.d.localeCompare(a.d)}).map(function(x){return '<div class="p" style="cursor:default"><span>'+E(x.d)+'</span><span><b class="ok">'+F(x.amt)+'</b><button class="d" onclick="delX(\''+p.id+'\',\'pay\',\''+x.id+'\')">✕</button></span></div>'}).join('')+'</div>';}
+function cur(id){return db.p.filter(function(x){return x.id==id})[0]}
+function addT(id){var c=+v('tc');if(!v('tt').trim()||!(c>=0)||v('tc')==='')return alert('أدخل نوع العلاج والتكلفة');cur(id).t.push({id:uid(),d:v('td'),type:v('tt').trim(),cost:c,lab:+v('tl')||0});save();draw()}
+function addP(id){var a=+v('pa');if(!(a>0))return alert('أدخل مبلغاً صحيحاً');cur(id).pay.push({id:uid(),d:v('pd'),amt:a});save();draw()}
+function addLab(){var a=+v('la');if(!(a>0))return alert('أدخل المبلغ');db.lab.push({id:uid(),d:v('ld'),amt:a,n:v('ln').trim()||'مخبر'});save();draw()}
+function delX(id,k,x){if(!confirm('حذف هذا السجل؟'))return;var p=cur(id);p[k]=p[k].filter(function(i){return i.id!=x});save();draw()}
+function del(k,x){if(!confirm('حذف هذا السجل؟'))return;db[k]=db[k].filter(function(i){return i.id!=x});save();draw()}
+function delP(id){if(!confirm('حذف المريض وكل سجلاته؟'))return;db.p=db.p.filter(function(x){return x.id!=id});db.ap=db.ap.filter(function(a){return a.pid!=id});save();view=null;draw()}
+function bk(){var b=document.getElementById('bx');b.style.display='block';b.value=JSON.stringify(db);b.select()}
+function rs(){var b=document.getElementById('bx');if(b.style.display=='none'){b.style.display='block';b.value='';return}try{var d=JSON.parse(b.value);if(!d.p)throw 0;if(!confirm('سيتم استبدال البيانات الحالية. متابعة؟'))return;db=d;save();draw()}catch(e){alert('النسخة غير صالحة')}}
+function ak(a,b){return (a.d+a.t).localeCompare(b.d+b.t)}
+function dn(id){db.ap=db.ap.filter(function(a){return a.id!=id});save();draw()}
+function apSec(u,o){var L=function(a){var p=cur(a.pid);return '<div class="p" onclick="'+(p?"view='"+p.id+"';draw()":'')+'"><span'+(a.d==today()?' style="color:var(--pr)"':'')+'>'+E(a.d)+' '+E(a.t)+' — <b>'+E(p?p.name:'؟')+'</b> '+E(a.n)+'</span><button class="d" onclick="event.stopPropagation();dn(\''+a.id+'\')">تم ✓</button></div>'};
+return '<div class="c"><h2>📅 المواعيد</h2><div class="r"><select id="ap">'+db.p.map(function(p){return '<option value="'+p.id+'">'+E(p.name)+'</option>'}).join('')+'</select><input id="ad" type="date" value="'+today()+'"><input id="at" type="time" value="10:00"><input id="an" placeholder="ملاحظة"><button onclick="addAp()">حجز</button></div>'+(o.length?'<p class="bad">⚠ مواعيد فائتة:</p>'+o.map(L).join(''):'')+u.map(L).join('')+(u.length||o.length?'':'<p class="mu">لا مواعيد.</p>')+'</div>'}
+function addAp(){if(!v('ap'))return alert('أضف مريضاً أولاً');db.ap.push({id:uid(),pid:v('ap'),d:v('ad'),t:v('at'),n:v('an').trim()});save();draw()}
+function rep(){RA=v('ra');RB=v('rb');var Rv=0,T=0,C=0,pt={},ln=0,rw=[];
+db.p.forEach(function(p){p.pay.forEach(function(x){if(x.d>=RA&&x.d<=RB)Rv+=+x.amt});p.t.forEach(function(x){if(x.d>=RA&&x.d<=RB){T++;C+=+x.cost;pt[p.id]=1;rw.push([x.d,p.name,x.type,x.cost])}})});
+db.lab.forEach(function(x){if(x.d>=RA&&x.d<=RB)ln+=+x.amt});rw.sort().reverse();
+document.getElementById('rp').innerHTML='<div class="g"><div class="c s"><span>المقبوض</span><b class="ok">'+F(Rv)+'</b></div><div class="c s"><span>دفعات المخبر</span><b class="bad">'+F(ln)+'</b></div><div class="c s"><span>الصافي</span><b>'+F(Rv-ln)+'</b></div><div class="c s"><span>علاجات / مرضى</span><b>'+T+' / '+Object.keys(pt).length+'</b></div><div class="c s"><span>قيمة العلاجات</span><b>'+F(C)+'</b></div></div><div class="x"><table><tr><th>التاريخ</th><th>المريض</th><th>العلاج</th><th>التكلفة</th></tr>'+rw.slice(0,60).map(function(r){return '<tr><td>'+E(r[0])+'</td><td>'+E(r[1])+'</td><td>'+E(r[2])+'</td><td>'+F(r[3])+'</td></tr>'}).join('')+'</table></div>'}
+async function dl(){try{var d=await claude.use('downloads');if(!d)return bk();await d.save({filename:'clinic-backup-'+today()+'.json',data:JSON.stringify(db)})}catch(e){}}
+function rf2(i){var f=i.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);if(!d.p)throw 0;if(!confirm('سيتم استبدال البيانات الحالية. متابعة؟'))return;db=d;if(!db.ap)db.ap=[];save();draw()}catch(e){alert('ملف غير صالح')}};r.readAsText(f)}
+function draw(){var h;if(view=='new')h=form();else if(view&&view[0]=='e'&&cur(view.slice(1)))h='<div class="r"></div>'+form(cur(view.slice(1)));else if(view&&cur(view))h=pat(cur(view));else{view=null;h=home()}document.getElementById('app').innerHTML=h;window.scrollTo(0,0);if(document.getElementById('rp'))rep()}
+var LK='clinic_lock',fails=0,until=0;
+async function H(c){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('clinic:'+c));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}
+function lockUI(set,msg){document.getElementById('app').innerHTML='<div class="c" style="max-width:360px;margin:12vh auto;text-align:center"><h1>🦷 إدارة العيادة</h1><p class="mu">'+(set?'أنشئ رمز دخول (٦ خانات أو أكثر)':'أدخل رمز الدخول')+'</p><input id="kc" type="password" autocomplete="off" style="text-align:center" onkeydown="if(event.key===\'Enter\')go()"><button onclick="go()" style="width:100%">'+(set?'حفظ ودخول':'دخول')+'</button><p class="bad">'+(msg||'')+'</p></div>'}
+function enter(){sessionStorage.setItem('cu','1');draw();if(window.claude)initSync()}
+function lock(){sessionStorage.removeItem('cu');lockUI(0)}
+async function go(){var c=v('kc'),h0=localStorage.getItem(LK);if(Date.now()<until)return lockUI(!h0,'انتظر نصف دقيقة ثم حاول');
+if(!h0){if(c.length<6)return lockUI(1,'الرمز قصير');localStorage.setItem(LK,await H(c));return enter()}
+if(await H(c)===h0){fails=0;return enter()}
+if(++fails>=5){until=Date.now()+30000;fails=0}lockUI(0,'رمز غير صحيح')}
+async function chg(){var c=prompt('الرمز الجديد (٦ خانات أو أكثر)');if(!c)return;if(c.length<6)return alert('الرمز قصير');localStorage.setItem(LK,await H(c));alert('تم تغيير الرمز')}
+async function gate(){var h0=null;try{h0=localStorage.getItem(LK)}catch(e){}
+var m=location.hash.match(/k=([^&]*)/);if(m){history.replaceState(null,'',location.pathname+location.search);if(h0&&await H(decodeURIComponent(m[1]))===h0)return enter()}
+if(h0&&sessionStorage.getItem('cu'))return enter();lockUI(!h0)}
+gate();
+</script></body></html>
